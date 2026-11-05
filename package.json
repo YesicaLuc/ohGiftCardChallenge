@@ -3,13 +3,19 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test:api": "cypress run --spec 'cypress/e2e/api/**/*.cy.ts'",
+    "test:ui": "cypress run --spec 'cypress/e2e/ui/**/*.cy.ts'",
+    "test": "cypress run"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@faker-js/faker": "^10.6.0",
     "@types/node": "^26.6.6",
     "cypress": "^16.2.1",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "zod": "^4.6.7"
   }
 }
