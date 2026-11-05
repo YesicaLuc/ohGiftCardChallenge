@@ -1,0 +1,4 @@
+# Cypress
+cypress/videos/
+cypress/screenshots/
+cypress/reports/
