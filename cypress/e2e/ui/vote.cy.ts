@@ -1,14 +1,16 @@
 import { buildUser } from '../../support/factories/user';
+import { homePage } from '../../pages/HomePage';
 import { modelPage } from '../../pages/ModelPage';
 
-const DIABLO_MODEL_ID = 'ckl2phsabijs71623vk0%7Cckl2phsabijs71623vqg';
+// Lamborghini Diablo. El id es "<marca>|<modelo>"; se codifica al armar cada URL.
+const DIABLO_MODEL_ID = 'ckl2phsabijs71623vk0|ckl2phsabijs71623vqg';
 
 describe('Buggy Cars - Votación', () => {
   it('Votar un modelo dejando un comentario', () => {
     const user = buildUser();
     const comment = `Test comment ${Date.now()}`;
 
-    cy.visit('/'); // el runner interactivo necesita una página cargada antes de los requests (no afecta el running por consola)
+    homePage.visit(); // ver "cy.visit('/') antes del setup por API" en el README
     cy.registerUserByApi(user);
     cy.loginByApi(user);
 
@@ -35,8 +37,8 @@ describe('Buggy Cars - Votación', () => {
         modelPage.thankYouMessage().should('be.visible');
         modelPage.votesCount().should('have.text', String(initialVotes + 1));
 
-        // 2. Reviso que el backend guardo el comentario
-        cy.request(`${Cypress.expose('buggyApiUrl')}/models/${DIABLO_MODEL_ID}`)
+        // 2. El backend guardó el comentario
+        cy.request(`${Cypress.expose('buggyApiUrl')}/models/${encodeURIComponent(DIABLO_MODEL_ID)}`)
           .its('body.comments')
           .then((comments: { text: string }[]) => {
             const saved = comments.some((c) => c.text === comment);

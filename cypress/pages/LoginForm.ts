@@ -1,28 +1,43 @@
+// Formulario de login del header: está presente en todas las páginas del sitio.
+// Los selectores se acotan a <my-login> porque la página de registro tiene otro campo name="password".
+const selectors = {
+  usernameInput: 'my-login input[name="login"]',
+  passwordInput: 'my-login input[name="password"]',
+  submitButton: 'my-login button[type="submit"]',
+  errorMessage: 'my-login .label-warning',
+  navLink: 'my-login .nav-link',
+  link: 'my-login a',
+};
+
 class LoginForm {
   login(username: string, password: string) {
-    cy.get('my-login input[name="login"]').type(username);
-    cy.get('my-login input[name="password"]').type(password);
-    cy.get('my-login button[type="submit"]').click();
-  }
-
-  greeting() {
-    return cy.contains('my-login .nav-link', 'Hi,');
-  }
-
-  errorMessage() {
-    return cy.get('my-login .label-warning');
-  }
-
-  logout() {
-    cy.contains('my-login a', 'Logout').click();
-  }
-
-  loginInput() {
-    return cy.get('my-login input[name="login"]');
+    this.usernameInput().type(username);
+    cy.get(selectors.passwordInput).type(password);
+    this.submit();
   }
 
   submit() {
-    cy.get('my-login button[type="submit"]').click();
+    cy.get(selectors.submitButton).click();
+  }
+
+  logout() {
+    this.logoutLink().click();
+  }
+
+  usernameInput() {
+    return cy.get(selectors.usernameInput);
+  }
+
+  greeting() {
+    return cy.contains(selectors.navLink, 'Hi,');
+  }
+
+  logoutLink() {
+    return cy.contains(selectors.link, 'Logout');
+  }
+
+  errorMessage() {
+    return cy.get(selectors.errorMessage);
   }
 }
 

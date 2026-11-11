@@ -30,7 +30,7 @@ Cypress.Commands.add('loginByApi', (user: User) => {
       expect(res.status).to.eq(200);
       cy.visit('/', {
         onBeforeLoad(win) {
-          // TODO: confirmar la clave en Application → Local Storage
+          // La app lee la sesión de localStorage 'token' al iniciar (AuthApiService.getToken)
           win.localStorage.setItem('token', res.body.access_token);
         },
       });

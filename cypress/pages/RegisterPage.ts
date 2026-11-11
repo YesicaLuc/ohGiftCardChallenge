@@ -1,4 +1,13 @@
-type User = { username: string; firstName: string; lastName: string; password: string };
+import type { User } from '../support/factories/user';
+
+const selectors = {
+  username: '#username',
+  firstName: '#firstName',
+  lastName: '#lastName',
+  password: '#password',
+  confirmPassword: '#confirmPassword',
+  successMessage: '.result.alert-success',
+};
 
 class RegisterPage {
   visit() {
@@ -6,11 +15,11 @@ class RegisterPage {
   }
 
   fillForm(user: User) {
-    cy.get('#username').type(user.username);
-    cy.get('#firstName').type(user.firstName);
-    cy.get('#lastName').type(user.lastName);
-    cy.get('#password').type(user.password);
-    cy.get('#confirmPassword').type(user.password);
+    cy.get(selectors.username).type(user.username);
+    cy.get(selectors.firstName).type(user.firstName);
+    cy.get(selectors.lastName).type(user.lastName);
+    cy.get(selectors.password).type(user.password);
+    cy.get(selectors.confirmPassword).type(user.password);
   }
 
   submit() {
@@ -18,7 +27,7 @@ class RegisterPage {
   }
 
   successMessage() {
-    return cy.get('.result.alert-success');
+    return cy.get(selectors.successMessage);
   }
 }
 

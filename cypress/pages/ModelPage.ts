@@ -1,23 +1,30 @@
+const selectors = {
+  votesCount: '.card-block h4 strong',
+  commentInput: '#comment',
+  thankYouMessage: 'p.card-text',
+  commentRows: 'table tbody tr',
+};
+
 class ModelPage {
   visit(modelId: string) {
-    cy.visit(`/model/${modelId}`);
-  }
-
-  votesCount() {
-    return cy.get('.card-block h4 strong');
+    cy.visit(`/model/${encodeURIComponent(modelId)}`);
   }
 
   vote(comment: string) {
-    cy.get('#comment').type(comment);
+    cy.get(selectors.commentInput).type(comment);
     cy.contains('button', 'Vote!').click();
   }
 
+  votesCount() {
+    return cy.get(selectors.votesCount);
+  }
+
   thankYouMessage() {
-    return cy.contains('p.card-text', 'Thank you for your vote!');
+    return cy.contains(selectors.thankYouMessage, 'Thank you for your vote!');
   }
 
   commentRow(comment: string) {
-    return cy.contains('table tbody tr', comment);
+    return cy.contains(selectors.commentRows, comment);
   }
 }
 
