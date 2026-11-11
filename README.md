@@ -1,22 +1,194 @@
-# QA Automation Challenge - SDET
+# QA Automation Challenge (SDET)
+
+Suite de pruebas automatizadas con Cypress y TypeScript, en tres partes:
+
+1. **API:** ciclo de vida del recurso `/pet` de [Swagger Petstore](https://petstore.swagger.io/).
+2. **UI:** registro, login, votación y logout en [Buggy Cars Rating](https://buggy.justtestit.org/).
+3. **CI:** GitHub Actions corre las dos suites en cada push y publica el reporte como artifact.
+
+## Requisitos
+
+- Node.js 22, 24 o 26+. Cypress 16 no soporta Node 20 ni 25.
+- npm
+
+## Instalación y ejecución
+
+```bash
+git clone https://github.com/YesicaLuc/ohGiftCardChallenge.git
+cd ohGiftCardChallenge
+npm install
+```
+
+| Comando                                   | Qué hace                         |
+| ----------------------------------------- | -------------------------------- |
+| `npm test`                                | Corre las dos suites             |
+| `npm run test:api`                        | Corre solo la suite de API       |
+| `npm run test:ui`                         | Corre solo la suite de UI        |
+| `npx cypress open`                        | Abre Cypress en modo interactivo |
+| `npm run lint` / `npm run lint:fix`       | ESLint                           |
+| `npm run format` / `npm run format:check` | Prettier                         |
+
+Después de cada corrida, el reporte queda en `cypress/reports/index.html`.
+
+No hace falta configurar credenciales: los usuarios se generan en cada ejecución.
+
+## Estructura
+
+```
+cypress/
+  e2e/
+    api/pet.cy.ts          tests de Petstore
+    ui/auth.cy.ts          registro, login y logout
+    ui/vote.cy.ts          votación con comentario
+  pages/                   Page Objects (RegisterPage, LoginForm, ModelPage)
+  schemas/pet-schema.ts    schemas de Zod para validar contratos
+  support/
+    factories/             datos de prueba (buildPet, buildUser)
+    commands.ts            registerUserByApi, loginByApi
+    validateSchema.ts      helper de validación de schema
+  types/                   tipos de librerías que no los traen
+cypress.config.ts          URLs y configuración del reporter
+.github/workflows/e2e.yml  pipeline
+```
+
+## Casos automatizados
+
+| ID     | Suite | Caso                                   | Qué valida                                                               |
+| ------ | ----- | -------------------------------------- | ------------------------------------------------------------------------ |
+| API-01 | API   | Crear una mascota y consultarla        | Status, schema y que los datos coincidan con los enviados                |
+| API-02 | API   | Actualizar el estado a `sold`          | Status, schema y que el cambio persista en un `GET` posterior            |
+| API-03 | API   | Eliminar una mascota                   | Status, schema, id eliminado y `404` en la consulta posterior            |
+| API-04 | API   | Consultar un id inexistente            | `404` y mensaje `Pet not found`                                          |
+| API-05 | API   | Eliminar un id inexistente             | `404`                                                                    |
+| API-06 | API   | Consultar un id con formato inválido   | `400` según la documentación (hallazgo #2)                               |
+| API-07 | API   | Crear con un id de tipo incorrecto     | `405` según la documentación (hallazgo #1)                               |
+| API-08 | API   | Actualizar con `status` fuera del enum | `405` según la documentación (hallazgo #3)                               |
+| UI-01  | UI    | Registro                               | Mensaje "Registration is successful"                                     |
+| UI-02  | UI    | Login exitoso                          | Saludo con el nombre del usuario y link de Logout                        |
+| UI-03  | UI    | Login con credenciales inválidas       | Mensaje "Invalid username/password"                                      |
+| UI-04  | UI    | Login con campos vacíos                | Validación nativa del input y que no se envíe el request                 |
+| UI-05  | UI    | Votar con comentario                   | Voto registrado, comentario guardado en el backend y visible en la tabla |
+| UI-06  | UI    | Logout                                 | Desaparece el saludo y vuelve el formulario de login                     |
+
+## Decisiones técnicas
+
+### Cypress para API y UI
+
+La API se podía automatizar con otra herramienta, pero usé `cy.request` en las dos partes: un solo runner, un solo reporte y un solo pipeline.
+
+### Configuración
+
+Las URLs (sitio, API de Buggy Cars y Petstore) están en `cypress.config.ts`. En Cypress 16 ya no existe `Cypress.env()`, así que los valores públicos van en `expose` y se leen con `Cypress.expose()`. Si en el futuro hiciera falta un secreto, iría por `cy.env()`, que lo mantiene en el proceso de Node y no lo expone en el navegador. Hoy no hay ninguno: cada test crea su propio usuario.
+
+TypeScript está fijado en 6.0 porque `typescript-eslint` todavía no soporta la versión 7.
+
+### Datos de prueba en entornos compartidos
+
+Petstore y Buggy Cars son públicos, así que cualquiera puede crear datos con los mismos valores que mis tests. Por eso:
+
+- Los ids de mascotas se generan con `Date.now()` más un número aleatorio. El contrato define el id como `int64`, así que es numérico.
+- Los usuarios tienen un username con timestamp, y la contraseña siempre cumple la política del sitio.
+- Ningún id está hardcodeado. Un test que usaba un id "inexistente" fijo falló porque otra persona había creado una mascota con ese id.
+- En la API, cada test crea su propia mascota y la borra en un `afterEach`, así se limpia aunque el test falle.
+
+### API: contrato y respuestas no documentadas
+
+Valido el schema de cada respuesta con Zod. Hay dos schemas porque la API devuelve dos formas: el modelo `Pet` (`POST`, `PUT` y `GET` exitosos) y `ApiResponse` (`{ code, type, message }`, que devuelven el `DELETE` exitoso y los `404`).
+
+`POST`, `PUT` y `DELETE` no documentan su respuesta exitosa. Para saber qué esperar, los ejecuté desde Swagger: `POST` y `PUT` devuelven el modelo `Pet`, y `DELETE` devuelve un `ApiResponse` con el id eliminado en `message`.
+
+### Tests que fallan a propósito
+
+La consigna pide no forzar los tests cuando la API no cumple su documentación. Esos tests esperan lo documentado y fallan, con un comentario que remite a los [hallazgos](#hallazgos-api-petstore). No usé `it.skip` porque un test skipeado no se ejecuta: si la API se corrige, estos tests pasan a verde sin tocar nada.
+
+Por eso el job de API del pipeline termina en rojo, con exit code 3 (Cypress devuelve la cantidad de tests fallidos).
+
+### UI: Page Object Model
+
+Elegí Page Objects porque las mismas pantallas se usan en varios tests, y si cambia un selector se corrige en un solo lugar. Los métodos solo hacen acciones o devuelven elementos; las assertions quedan en los tests, que es donde se ve qué se está probando.
+
+`LoginForm` no es una página: es el formulario del header, presente en todo el sitio. Por eso está separado.
+
+### UI: selectores
+
+El sitio no tiene atributos `data-*` pensados para testing. Usé, en este orden:
+
+1. **Ids** (`#username`, `#comment`, etc.).
+2. **Atributo `name`**, acotado al componente de Angular (`my-login input[name="password"]`). Esto hace falta porque en la página de registro hay dos campos `name="password"`, el del header y el del formulario.
+3. **Texto visible** para botones y mensajes (`cy.contains('button', 'Vote!')`).
+
+Descarté los XPath absolutos (se rompen con cualquier cambio de estructura) y los atributos `_ngcontent-*`, que Angular regenera en cada build.
+
+### UI: independencia y setup por API
+
+Cada test prueba una sola cosa y no depende de los otros:
+
+- Solo el test de registro usa la UI de registro. Los demás crean el usuario por API (`cy.registerUserByApi`).
+- Solo los tests de login usan la UI de login. Votación y logout se loguean por API (`cy.loginByApi`): piden el token a `/oauth/token`, lo guardan en `localStorage` antes de que cargue la app, y `cy.session` cachea la sesión.
+
+Así, si se rompe el login, falla el test de login y no también los de votación y logout.
+
+### Sin esperas fijas
+
+- Las assertions con `.should()` reintentan hasta que se cumplen.
+- Donde la pantalla depende de una respuesta del servidor, espero ese request con `cy.intercept` y `cy.wait('@alias')`.
+
+En la votación, el mensaje de confirmación y el contador se actualizan recién cuando la app vuelve a pedir el modelo después del voto, y ese request a veces tarda más de 4 segundos. En vez de subir timeouts, defino un alias nuevo (`getModelAfterVote`) justo antes de votar, para esperar ese request puntual y no los de la carga inicial.
+
+### Votación: validación en tres capas
+
+El test de votación verifica por separado:
+
+1. Que el voto se registró (mensaje de confirmación y contador +1).
+2. Que el backend guardó el comentario (consulta directa a la API del modelo).
+3. Que la tabla muestra el comentario.
+
+Si falla, el mensaje indica en qué capa. Eso permitió confirmar que una falla intermitente no era del test sino de la app (ver [hallazgos de UI](#hallazgos-buggy-cars)).
+
+### Login con campos vacíos
+
+La app no muestra un mensaje propio: usa la validación nativa de HTML5 (`required`). Ese globo lo dibuja el navegador y no existe en el DOM, así que valido el estado del input (`validity.valueMissing`) y que no se haya enviado el request de login. No comparo el texto del mensaje porque depende del idioma del navegador.
+
+### `cy.visit('/')` antes del setup por API
+
+Los tests de votación y logout arrancan con requests, sin página cargada. En modo interactivo, el runner fallaba al intentar mostrar el snapshot de esos comandos. Cargar el home primero lo evita y no cambia lo que prueba el test. En modo `run` no pasa.
+
+## CI
+
+El workflow (`.github/workflows/e2e.yml`) corre en cada push:
+
+- Dos jobs en paralelo con una matriz (`api` y `ui`), con `fail-fast: false` para que una suite no cancele la otra.
+- Node 22, `npm ci` (instala exactamente lo del lockfile) y lint antes de los tests.
+- El reporte de Mochawesome, con capturas de los tests fallidos, se sube como artifact (`report-api` y `report-ui`) aunque los tests fallen.
+- Ubuntu fijado en 24.04, para que el entorno no cambie cuando GitHub actualice `ubuntu-latest`.
 
 ## Hallazgos (API Petstore)
 
-Diferencias encontradas entre la [documentación de Swagger Petstore](https://petstore.swagger.io/) y el comportamiento real de la API en el recurso `/pet`.
+| #   | Caso                                                     | Documentación                                    | Comportamiento real                                                           | Test                      |
+| --- | -------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------- | ------------------------- |
+| 1   | `POST /pet` con `id` de tipo inválido (string)           | `405 Invalid input`                              | `500`                                                                         | Falla (hallazgo conocido) |
+| 2   | `GET /pet/{petId}` con id alfanumérico                   | `400 Invalid ID supplied`                        | `404`                                                                         | Falla (hallazgo conocido) |
+| 3   | `PUT /pet` con `status` fuera del enum (`adopted`)       | Solo admite `available`, `pending` y `sold`      | Lo acepta y lo guarda                                                         | Falla (hallazgo conocido) |
+| 4   | `POST /pet`, `PUT /pet` y `DELETE /pet/{petId}` exitosos | No documentan la respuesta exitosa, solo errores | Responden `200`                                                               | Observación               |
+| 5   | `DELETE /pet/{petId}` con id inexistente                 | `404 Pet not found`                              | `404` sin body, mientras que el `404` de `GET` devuelve un JSON con `message` | Observación               |
 
-Siguiendo la consigna, cuando la API responde distinto a lo documentado **no ajusté el test para que pase**: el test espera lo que dice la documentación y **falla a propósito**, con un comentario que remite a esta tabla. Preferí dejarlos fallar en vez de marcarlos con `it.skip` porque un test skipeado no se ejecuta: si la API se corrige, estos tests pasan a verde solos. Las observaciones no tienen un test asociado que falle.
+## Hallazgos (Buggy Cars)
 
-| #   | Caso                                                     | Documentación                                                    | Comportamiento real                                                                 | Test                      |
-| --- | -------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------- |
-| 1   | `POST /pet` con `id` de tipo inválido (string)           | `405 Invalid input`                                              | `500`                                                                               | Falla (hallazgo conocido) |
-| 2   | `GET /pet/{petId}` con id alfanumérico                   | `400 Invalid ID supplied`                                        | `404`                                                                               | Falla (hallazgo conocido) |
-| 3   | `PUT /pet` con `status` fuera del enum (`adopted`)       | Solo admite `available`, `pending` y `sold`                      | Lo acepta y lo guarda                                                               | Falla (hallazgo conocido) |
-| 4   | `POST /pet`, `PUT /pet` y `DELETE /pet/{petId}` exitosos | No documentan la respuesta exitosa: solo listan códigos de error | Responden `200`                                                                     | Observación               |
-| 5   | `DELETE /pet/{petId}` con id inexistente                 | `404 Pet not found`                                              | `404` con body vacío, mientras que el `404` de `GET` devuelve un JSON con `message` | Observación               |
+- **El comentario se pierde de forma intermitente.** A veces el voto se registra (el usuario ve "Thank you for your vote!" y el contador sube), pero el comentario nunca se guarda. Lo confirmé consultando la API del modelo minutos después: el comentario no estaba. El test de votación falla cuando pasa, con el mensaje "el backend guardó el comentario". No es inestabilidad del test, así que no le agregué reintentos.
+- **El autor de los comentarios está vacío.** No es solo de la pantalla: la API devuelve `"user": ""` en todos los comentarios, así que el backend los guarda sin usuario.
 
-### Cómo validé las respuestas no documentadas
+## Trade-offs
 
-Como `POST /pet`, `PUT /pet` y `DELETE /pet/{petId}` no documentan su respuesta exitosa, ejecuté los requests desde Swagger ("Try it out") para ver el body real:
+- Crear datos en cada test hace la suite más lenta, pero la vuelve independiente del orden y de lo que haga otra gente en los entornos compartidos.
+- El test de votación compara el contador antes y después de votar. Si otra persona vota el mismo modelo en ese instante, el contador sube 2 y el test falla. Es poco probable, pero posible.
+- Los usuarios que crean los tests de UI quedan en Buggy Cars, porque el sitio no expone una forma de borrarlos.
 
-- **`POST` y `PUT`** devuelven el mismo modelo `Pet` que sí está documentado en `GET /pet/{petId}`, por eso las assertions de esas respuestas se basan en ese modelo.
-- **`DELETE`** devuelve un objeto distinto: `{ "code": 200, "type": "unknown", "message": "<id eliminado>" }`. En cambio, su `404` no trae body (ver hallazgo #5).
+## Qué agregaría con más tiempo
+
+- Colección de Postman equivalente, ejecutable con Newman.
+- Correr la suite de UI en más de un navegador (Chrome y Firefox) dentro de la matriz.
+- Generar los schemas de Zod a partir del OpenAPI de Petstore en vez de escribirlos a mano.
+- Casos negativos de registro (contraseñas que no coinciden, usuario existente, política de contraseña).
+- Ejecución programada del pipeline (por ejemplo, diaria) para detectar cambios en las APIs sin depender de un push.
+
+Evalué usar BDD (Cucumber) y no lo sumé: para una suite de este tamaño, mantenida por un equipo técnico, agrega una capa de indirección sin mucho beneficio.
