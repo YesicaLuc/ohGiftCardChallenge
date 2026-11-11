@@ -19,19 +19,36 @@ cd ohGiftCardChallenge
 npm install
 ```
 
-| Comando | Qué hace |
-|---|---|
-| `npm test` | Corre las dos suites |
-| `npm run test:api` | Corre solo la suite de API |
-| `npm run test:ui` | Corre solo la suite de UI |
-| `npx cypress open` | Abre Cypress en modo interactivo |
-| `npm run lint` / `npm run lint:fix` | ESLint |
-| `npm run format` / `npm run format:check` | Prettier |
-| `npm run test:postman` | Corre la colección de Postman con Newman |
+| Comando                                   | Qué hace                                                            |
+| ----------------------------------------- | ------------------------------------------------------------------- |
+| `npm test`                                | Corre las dos suites (sin los known bugs)                           |
+| `npm run test:api`                        | Corre solo la suite de API (sin los known bugs)                     |
+| `npm run test:ui`                         | Corre solo la suite de UI                                           |
+| `npm run test:known-bugs`                 | Corre solo los tests de [known bugs](#known-bugs-pendientes-de-fix) |
+| `npx cypress open`                        | Abre Cypress en modo interactivo                                    |
+| `npm run lint` / `npm run lint:fix`       | ESLint                                                              |
+| `npm run format` / `npm run format:check` | Prettier                                                            |
+| `npm run test:postman`                    | Corre la colección de Postman con Newman                            |
 
 Después de cada corrida, el reporte queda en `cypress/reports/index.html`.
 
 No hace falta configurar credenciales: los usuarios se generan en cada ejecución.
+
+### Variables de entorno
+
+Las URLs tienen como valor por defecto los ambientes públicos del challenge. Para apuntar a otro ambiente, se sobrescriben con variables de entorno, sin tocar código:
+
+| Variable           | Default                                                            |
+| ------------------ | ------------------------------------------------------------------ |
+| `BASE_URL`         | `https://buggy.justtestit.org`                                     |
+| `BUGGY_API_URL`    | `https://k51qryqov3.execute-api.ap-southeast-2.amazonaws.com/prod` |
+| `PETSTORE_API_URL` | `https://petstore.swagger.io/v2`                                   |
+
+```bash
+PETSTORE_API_URL=https://petstore.staging.example/v2 npm run test:api
+```
+
+> Si corrés Cypress desde la terminal integrada de VS Code y falla con `bad option: --no-sandbox`, es porque VS Code exporta `ELECTRON_RUN_AS_NODE=1`. Ejecutá `unset ELECTRON_RUN_AS_NODE` antes de correr los tests.
 
 ## Estructura
 
@@ -41,7 +58,7 @@ cypress/
     api/pet.cy.ts          tests de Petstore
     ui/auth.cy.ts          registro, login y logout
     ui/vote.cy.ts          votación con comentario
-  pages/                   Page Objects (RegisterPage, LoginForm, ModelPage)
+  pages/                   Page Objects (HomePage, RegisterPage, LoginForm, ModelPage)
   schemas/pet-schema.ts    schemas de Zod para validar contratos
   support/
     factories/             datos de prueba (buildPet, buildUser)
@@ -49,7 +66,8 @@ cypress/
     validateSchema.ts      helper de validación de schema
   types/                   tipos de librerías que no los traen
 postman/                   colección de Postman y entorno (baseUrl)
-cypress.config.ts          URLs y configuración del reporter
+cypress.config.ts          URLs (sobrescribibles por variables de entorno), reporter y grep
+.nvmrc                     versión de Node que usan el pipeline y nvm
 .github/workflows/e2e.yml  pipeline
 ```
 
@@ -67,22 +85,22 @@ Una diferencia con Cypress: Newman corre los requests del ciclo de vida en secue
 
 ## Casos automatizados
 
-| ID | Suite | Caso | Qué valida |
-|---|---|---|---|
-| API-01 | API | Crear una mascota y consultarla | Status, schema y que los datos coincidan con los enviados |
-| API-02 | API | Actualizar el estado a `sold` | Status, schema y que el cambio persista en un `GET` posterior |
-| API-03 | API | Eliminar una mascota | Status, schema, id eliminado y `404` en la consulta posterior |
-| API-04 | API | Consultar un id inexistente | `404` y mensaje `Pet not found` |
-| API-05 | API | Eliminar un id inexistente | `404` |
-| API-06 | API | Consultar un id con formato inválido | `400` según la documentación (hallazgo #2) |
-| API-07 | API | Crear con un id de tipo incorrecto | `405` según la documentación (hallazgo #1) |
-| API-08 | API | Actualizar con `status` fuera del enum | `405` según la documentación (hallazgo #3) |
-| UI-01 | UI | Registro | Mensaje "Registration is successful" |
-| UI-02 | UI | Login exitoso | Saludo con el nombre del usuario y link de Logout |
-| UI-03 | UI | Login con credenciales inválidas | Mensaje "Invalid username/password" |
-| UI-04 | UI | Login con campos vacíos | Validación nativa del input y que no se envíe el request |
-| UI-05 | UI | Votar con comentario | Voto registrado, comentario guardado en el backend y visible en la tabla |
-| UI-06 | UI | Logout | Desaparece el saludo y vuelve el formulario de login |
+| ID     | Suite | Caso                                   | Qué valida                                                               |
+| ------ | ----- | -------------------------------------- | ------------------------------------------------------------------------ |
+| API-01 | API   | Crear una mascota y consultarla        | Status, schema y que los datos coincidan con los enviados                |
+| API-02 | API   | Actualizar el estado a `sold`          | Status, schema y que el cambio persista en un `GET` posterior            |
+| API-03 | API   | Eliminar una mascota                   | Status, schema, id eliminado y `404` en la consulta posterior            |
+| API-04 | API   | Consultar un id inexistente            | `404` y mensaje `Pet not found`                                          |
+| API-05 | API   | Eliminar un id inexistente             | `404`                                                                    |
+| API-06 | API   | Consultar un id con formato inválido   | `400` según la documentación (hallazgo #2, `@known-bug`)                 |
+| API-07 | API   | Crear con un id de tipo incorrecto     | `405` según la documentación (hallazgo #1, `@known-bug`)                 |
+| API-08 | API   | Actualizar con `status` fuera del enum | `405` según la documentación (hallazgo #3, `@known-bug`)                 |
+| UI-01  | UI    | Registro                               | Mensaje "Registration is successful"                                     |
+| UI-02  | UI    | Login exitoso                          | Saludo con el nombre del usuario y link de Logout                        |
+| UI-03  | UI    | Login con credenciales inválidas       | Mensaje "Invalid username/password"                                      |
+| UI-04  | UI    | Login con campos vacíos                | Validación nativa del input y que no se envíe el request                 |
+| UI-05  | UI    | Votar con comentario                   | Voto registrado, comentario guardado en el backend y visible en la tabla |
+| UI-06  | UI    | Logout                                 | Desaparece el saludo y vuelve el formulario de login                     |
 
 ## Decisiones técnicas
 
@@ -92,7 +110,7 @@ La API se podía automatizar con otra herramienta, pero usé `cy.request` en las
 
 ### Configuración
 
-Las URLs (sitio, API de Buggy Cars y Petstore) están en `cypress.config.ts`. En Cypress 16 ya no existe `Cypress.env()`, así que los valores públicos van en `expose` y se leen con `Cypress.expose()`. Si en el futuro hiciera falta un secreto, iría por `cy.env()`, que lo mantiene en el proceso de Node y no lo expone en el navegador. Hoy no hay ninguno: cada test crea su propio usuario.
+Las URLs (sitio, API de Buggy Cars y Petstore) se definen en `cypress.config.ts`, que las lee de variables de entorno con un valor por defecto (ver [Variables de entorno](#variables-de-entorno)). Así se cambia de ambiente sin tocar código, y quien clona el repo lo puede correr sin configurar nada. En Cypress 16 ya no existe `Cypress.env()`, así que los valores públicos van en `expose` y se leen con `Cypress.expose()`. Si en el futuro hiciera falta un secreto, iría por `cy.env()`, que lo mantiene en el proceso de Node y no lo expone en el navegador. Hoy no hay ninguno: cada test crea su propio usuario.
 
 TypeScript está fijado en 6.0 porque `typescript-eslint` todavía no soporta la versión 7.
 
@@ -111,15 +129,22 @@ Valido el schema de cada respuesta con Zod. Hay dos schemas porque la API devuel
 
 `POST`, `PUT` y `DELETE` no documentan su respuesta exitosa. Para saber qué esperar, los ejecuté desde Swagger: `POST` y `PUT` devuelven el modelo `Pet`, y `DELETE` devuelve un `ApiResponse` con el id eliminado en `message`.
 
-### Tests que fallan a propósito
+### Known bugs (pendientes de fix)
 
-La consigna pide no forzar los tests cuando la API no cumple su documentación. Esos tests esperan lo documentado y fallan, con un comentario que remite a los [hallazgos](#hallazgos-api-petstore). No usé `it.skip` porque un test skipeado no se ejecuta: si la API se corrige, estos tests pasan a verde sin tocar nada.
+La consigna pide no forzar los tests cuando la API no cumple su documentación. Esos tres tests esperan lo documentado (no lo que la API responde hoy) y tienen el tag `@known-bug`, con un comentario que remite a los [hallazgos](#hallazgos-api-petstore).
 
-Por eso el job de API del pipeline termina en rojo, con exit code 3 (Cypress devuelve la cantidad de tests fallidos).
+Al principio los dejé fallando dentro de la suite de API, pero eso dejaba el job principal siempre en rojo, y un pipeline siempre en rojo no avisa nada: si mañana se rompe el ciclo de vida, nadie lo nota. Por eso los separé con [`@cypress/grep`](https://github.com/cypress-io/cypress/tree/develop/npm/grep):
+
+- **Job principal** (`npm run test:api`, `npm test`): corre con `grepTags=-@known-bug`. Los known bugs aparecen en el reporte como **pending**, así quedan visibles como pendientes de fix sin tapar regresiones reales.
+- **Job `known-bugs`** (`npm run test:known-bugs`): corre solo esos tests, con `continue-on-error` en CI. Hoy falla, y es lo esperado. Si la API se corrige, el job pasa a verde y es la señal para sacarles el tag y devolverlos a la suite principal.
+
+Elegí esto en vez de `it.skip` porque un test skipeado no se ejecuta nunca: no avisaría cuando la API cambie. Tampoco los modifiqué para que esperen el comportamiento actual (500, 404 y 200), porque eso sería convertir un bug en el comportamiento esperado.
+
+En un proyecto real, cada tag tendría además el id del ticket (por ejemplo `@known-bug` + `@PET-123`), para que el reporte enlace al bug y el test se reactive cuando se cierre el ticket.
 
 ### UI: Page Object Model
 
-Elegí Page Objects porque las mismas pantallas se usan en varios tests, y si cambia un selector se corrige en un solo lugar. Los métodos solo hacen acciones o devuelven elementos; las assertions quedan en los tests, que es donde se ve qué se está probando.
+Elegí Page Objects porque las mismas pantallas se usan en varios tests, y si cambia un selector se corrige en un solo lugar. Para que eso se cumpla, cada page object define sus selectores en un objeto `selectors` y los tests nunca usan `cy.get` directo sobre elementos de la página. Los métodos solo hacen acciones o devuelven elementos; las assertions quedan en los tests, que es donde se ve qué se está probando.
 
 `LoginForm` no es una página: es el formulario del header, presente en todo el sitio. Por eso está separado.
 
@@ -133,6 +158,8 @@ El sitio no tiene atributos `data-*` pensados para testing. Usé, en este orden:
 
 Descarté los XPath absolutos (se rompen con cualquier cambio de estructura) y los atributos `_ngcontent-*`, que Angular regenera en cada build.
 
+**Trade-off:** algunos elementos no tienen id, `name` ni un texto único, así que dependen de clases de Bootstrap o de la estructura: el contador de votos (`.card-block h4 strong`), el mensaje de error del login (`.label-warning`) y el de registro exitoso (`.result.alert-success`). Son los selectores más frágiles de la suite. Por eso están centralizados en los page objects y, cuando se puede, se combinan con el texto esperado. Con acceso al código de la app, lo correcto sería agregar atributos `data-testid`.
+
 ### UI: independencia y setup por API
 
 Cada test prueba una sola cosa y no depende de los otros:
@@ -141,6 +168,8 @@ Cada test prueba una sola cosa y no depende de los otros:
 - Solo los tests de login usan la UI de login. Votación y logout se loguean por API (`cy.loginByApi`): piden el token a `/oauth/token`, lo guardan en `localStorage` antes de que cargue la app, y `cy.session` cachea la sesión.
 
 Así, si se rompe el login, falla el test de login y no también los de votación y logout.
+
+La clave `token` de `localStorage` sale del código de la app (`AuthApiService` la lee al iniciar). Como cada test crea un usuario nuevo, `cy.session` no reutiliza sesiones entre tests. Lo uso porque aísla el estado (limpia cookies y storage al crear la sesión) y porque, si un día se comparte un usuario entre tests, el cacheo funciona sin cambiar nada.
 
 ### Sin esperas fijas
 
@@ -171,20 +200,22 @@ Los tests de votación y logout arrancan con requests, sin página cargada. En m
 
 El workflow (`.github/workflows/e2e.yml`) corre en cada push:
 
-- Dos jobs en paralelo con una matriz (`api` y `ui`), con `fail-fast: false` para que una suite no cancele la otra.
-- Node 22, `npm ci` (instala exactamente lo del lockfile) y lint antes de los tests.
-- El reporte de Mochawesome, con capturas de los tests fallidos, se sube como artifact (`report-api` y `report-ui`) aunque los tests fallen.
+- Un job de `lint` (ESLint y `prettier --check`), separado para no repetirlo en cada suite. No descarga el binario de Cypress.
+- Tres jobs de tests en paralelo con una matriz (`api`, `ui` y `known-bugs`), con `fail-fast: false` para que una suite no cancele la otra.
+- `known-bugs` tiene `continue-on-error`: muestra los hallazgos sin poner el pipeline en rojo (ver [Known bugs](#known-bugs-pendientes-de-fix)).
+- La versión de Node sale de `.nvmrc`. `npm ci` instala exactamente lo del lockfile, y el binario de Cypress se cachea por hash del lockfile.
+- El reporte de Mochawesome, con capturas de los tests fallidos, se sube como artifact (`report-api`, `report-ui` y `report-known-bugs`) aunque los tests fallen.
 - Ubuntu fijado en 24.04, para que el entorno no cambie cuando GitHub actualice `ubuntu-latest`.
 
 ## Hallazgos (API Petstore)
 
-| # | Caso | Documentación | Comportamiento real | Test |
-|---|---|---|---|---|
-| 1 | `POST /pet` con `id` de tipo inválido (string) | `405 Invalid input` | `500` | Falla (hallazgo conocido) |
-| 2 | `GET /pet/{petId}` con id alfanumérico | `400 Invalid ID supplied` | `404` | Falla (hallazgo conocido) |
-| 3 | `PUT /pet` con `status` fuera del enum (`adopted`) | Solo admite `available`, `pending` y `sold` | Lo acepta y lo guarda | Falla (hallazgo conocido) |
-| 4 | `POST /pet`, `PUT /pet` y `DELETE /pet/{petId}` exitosos | No documentan la respuesta exitosa, solo errores | Responden `200` | Observación |
-| 5 | `DELETE /pet/{petId}` con id inexistente | `404 Pet not found` | `404` sin body, mientras que el `404` de `GET` devuelve un JSON con `message` | Observación |
+| #   | Caso                                                     | Documentación                                    | Comportamiento real                                                           | Test                      |
+| --- | -------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------- | ------------------------- |
+| 1   | `POST /pet` con `id` de tipo inválido (string)           | `405 Invalid input`                              | `500`                                                                         | Falla (hallazgo conocido) |
+| 2   | `GET /pet/{petId}` con id alfanumérico                   | `400 Invalid ID supplied`                        | `404`                                                                         | Falla (hallazgo conocido) |
+| 3   | `PUT /pet` con `status` fuera del enum (`adopted`)       | Solo admite `available`, `pending` y `sold`      | Lo acepta y lo guarda                                                         | Falla (hallazgo conocido) |
+| 4   | `POST /pet`, `PUT /pet` y `DELETE /pet/{petId}` exitosos | No documentan la respuesta exitosa, solo errores | Responden `200`                                                               | Observación               |
+| 5   | `DELETE /pet/{petId}` con id inexistente                 | `404 Pet not found`                              | `404` sin body, mientras que el `404` de `GET` devuelve un JSON con `message` | Observación               |
 
 ## Hallazgos (Buggy Cars)
 
@@ -207,6 +238,7 @@ Qué más probaría en Buggy Cars, en qué nivel, y qué dejaría fuera de la au
 
 - Correr la suite de UI en más de un navegador (Chrome y Firefox) dentro de la matriz.
 - Generar los schemas de Zod a partir del OpenAPI de Petstore en vez de escribirlos a mano.
+- Elegir el modelo a votar por API (por ejemplo, el primero del ranking) en lugar de usar el id fijo del Lamborghini Diablo, para que el test no dependa de que ese modelo exista.
 - Casos negativos de registro (contraseñas que no coinciden, usuario existente, política de contraseña).
 - Ejecución programada del pipeline (por ejemplo, diaria) para detectar cambios en las APIs sin depender de un push.
 
