@@ -5,27 +5,51 @@ on:
   workflow_dispatch:
 
 jobs:
+  lint:
+    name: Lint y formato
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          CYPRESS_INSTALL_BINARY: 0 # este job no corre Cypress
+
+      - run: npm run lint
+      - run: npm run format:check
+
   test:
     name: Suite ${{ matrix.suite }}
     runs-on: ubuntu-24.04
+    # Los known bugs fallan a propósito: se reportan pero no ponen el pipeline en rojo
+    continue-on-error: ${{ matrix.suite == 'known-bugs' }}
     strategy:
       fail-fast: false
       matrix:
-        suite: [api, ui]
+        suite: [api, ui, known-bugs]
 
     steps:
       - uses: actions/checkout@v5
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
+
+      - name: Cache Cypress binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Lint
-        run: npm run lint
 
       - name: Run ${{ matrix.suite }} tests
         run: npm run test:${{ matrix.suite }}
