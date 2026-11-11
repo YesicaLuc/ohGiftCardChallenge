@@ -1,22 +1,25 @@
 {
   "name": "qa_automation_challenge",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Suite de pruebas automatizadas (API Petstore y UI Buggy Cars) con Cypress y TypeScript",
+  "private": true,
+  "engines": {
+    "node": "^22 || ^24 || >=26"
+  },
   "scripts": {
-    "test:api": "cypress run --spec 'cypress/e2e/api/**/*.cy.ts'",
-    "test:ui": "cypress run --spec 'cypress/e2e/ui/**/*.cy.ts'",
-    "test": "cypress run",
+    "test:api": "cypress run --spec 'cypress/e2e/api/**/*.cy.ts' --expose grepTags=-@known-bug",
+    "test:ui": "cypress run --spec 'cypress/e2e/ui/**/*.cy.ts' --expose grepTags=-@known-bug",
+    "test": "cypress run --expose grepTags=-@known-bug",
+    "test:known-bugs": "cypress run --expose grepTags=@known-bug,grepFilterSpecs=true,grepOmitFiltered=true",
+    "test:postman": "newman run postman/petstore.postman_collection.json -e postman/petstore.postman_environment.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
-       "test:postman": "newman run postman/petstore.postman_collection.json -e postman/petstore.postman_environment.json"
+    "format:check": "prettier --check ."
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@cypress/grep": "^7.0.0",
     "@eslint/js": "^10.0.1",
     "@faker-js/faker": "^10.6.0",
     "@types/node": "^26.6.6",
