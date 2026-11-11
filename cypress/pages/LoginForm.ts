@@ -16,6 +16,14 @@ class LoginForm {
   logout() {
     cy.contains('my-login a', 'Logout').click();
   }
+
+  loginInput() {
+    return cy.get('my-login input[name="login"]');
+  }
+
+  submit() {
+    cy.get('my-login button[type="submit"]').click();
+  }
 }
 
 export const loginForm = new LoginForm();
