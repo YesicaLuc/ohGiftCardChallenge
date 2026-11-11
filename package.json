@@ -7,8 +7,8 @@
     "node": "^22 || ^24 || >=26"
   },
   "scripts": {
-    "test:api": "cypress run --spec 'cypress/e2e/api/**/*.cy.ts' --expose grepTags=-@known-bug",
-    "test:ui": "cypress run --spec 'cypress/e2e/ui/**/*.cy.ts' --expose grepTags=-@known-bug",
+    "test:api": "cypress run --spec \"cypress/e2e/api/**/*.cy.ts\" --expose grepTags=-@known-bug",
+    "test:ui": "cypress run --spec \"cypress/e2e/ui/**/*.cy.ts\" --expose grepTags=-@known-bug",
     "test": "cypress run --expose grepTags=-@known-bug",
     "test:known-bugs": "cypress run --expose grepTags=@known-bug,grepFilterSpecs=true,grepOmitFiltered=true",
     "test:postman": "newman run postman/petstore.postman_collection.json -e postman/petstore.postman_environment.json",

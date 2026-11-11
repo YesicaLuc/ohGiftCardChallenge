@@ -45,10 +45,20 @@ Las URLs tienen como valor por defecto los ambientes públicos del challenge. Pa
 | `PETSTORE_API_URL` | `https://petstore.swagger.io/v2`                                   |
 
 ```bash
+# macOS / Linux
 PETSTORE_API_URL=https://petstore.staging.example/v2 npm run test:api
 ```
 
-> Si corrés Cypress desde la terminal integrada de VS Code y falla con `bad option: --no-sandbox`, es porque VS Code exporta `ELECTRON_RUN_AS_NODE=1`. Ejecutá `unset ELECTRON_RUN_AS_NODE` antes de correr los tests.
+```powershell
+# Windows (PowerShell)
+$env:PETSTORE_API_URL="https://petstore.staging.example/v2"; npm run test:api
+```
+
+### Windows
+
+El proyecto corre igual en Windows, macOS y Linux: los scripts de npm no usan sintaxis de una shell en particular, y `.gitattributes` fuerza los finales de línea LF para que `format:check` no falle después de un checkout en Windows.
+
+> Si corrés Cypress desde la terminal integrada de VS Code y falla con `bad option: --no-sandbox`, es porque VS Code exporta `ELECTRON_RUN_AS_NODE=1`. Antes de correr los tests, ejecutá `unset ELECTRON_RUN_AS_NODE` (macOS / Linux) o `Remove-Item Env:ELECTRON_RUN_AS_NODE` (PowerShell).
 
 ## Estructura
 
