@@ -6,16 +6,26 @@
   "scripts": {
     "test:api": "cypress run --spec 'cypress/e2e/api/**/*.cy.ts'",
     "test:ui": "cypress run --spec 'cypress/e2e/ui/**/*.cy.ts'",
-    "test": "cypress run"
+    "test": "cypress run",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@faker-js/faker": "^10.6.0",
     "@types/node": "^26.6.6",
     "cypress": "^16.2.1",
-    "typescript": "^7.0.2",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-cypress": "^7.0.4",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0",
+    "typescript-eslint": "^8.72.2",
     "zod": "^4.6.7"
   }
 }
