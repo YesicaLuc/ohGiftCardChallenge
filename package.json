@@ -20,6 +20,7 @@
     "@faker-js/faker": "^10.6.0",
     "@types/node": "^26.6.6",
     "cypress": "^16.2.1",
+    "cypress-mochawesome-reporter": "^5.0.0",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-cypress": "^7.0.4",
