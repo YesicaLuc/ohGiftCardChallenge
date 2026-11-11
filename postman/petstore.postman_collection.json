@@ -1,0 +1,502 @@
+{
+  "info": {
+    "name": "Petstore API - /pet",
+    "description": "Equivalente a cypress/e2e/api/pet.cy.ts. Los requests marcados como hallazgo esperan lo que dice la documentación y fallan a propósito (ver README).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Ciclo de vida",
+      "item": [
+        {
+          "name": "Crear una mascota",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Id único: Petstore es un entorno compartido",
+                  "pm.collectionVariables.set('petId', Date.now() + Math.floor(Math.random() * 1000));",
+                  "pm.collectionVariables.set('petName', pm.variables.replaceIn('{{$randomFirstName}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const petSchema = JSON.parse(pm.collectionVariables.get('petSchema'));",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Schema Pet válido', () => pm.response.to.have.jsonSchema(petSchema));",
+                  "pm.test('Los datos coinciden con los enviados', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.eql(Number(pm.collectionVariables.get('petId')));",
+                  "  pm.expect(body.name).to.eql(pm.collectionVariables.get('petName'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pet",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pet"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{petId}},\n  \"name\": \"{{petName}}\",\n  \"status\": \"available\",\n  \"photoUrls\": [\"https://example.com/{{petName}}.jpg\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Consultar la mascota por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const petSchema = JSON.parse(pm.collectionVariables.get('petSchema'));",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Schema Pet válido', () => pm.response.to.have.jsonSchema(petSchema));",
+                  "pm.test('Los datos coinciden con los enviados', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.name).to.eql(pm.collectionVariables.get('petName'));",
+                  "  pm.expect(body.status).to.eql('available');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pet/{{petId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pet",
+                "{{petId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar el estado a sold",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const petSchema = JSON.parse(pm.collectionVariables.get('petSchema'));",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Schema Pet válido', () => pm.response.to.have.jsonSchema(petSchema));",
+                  "pm.test('El estado cambió a sold', () => pm.expect(pm.response.json().status).to.eql('sold'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pet",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pet"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{petId}},\n  \"name\": \"{{petName}}\",\n  \"status\": \"sold\",\n  \"photoUrls\": [\"https://example.com/{{petName}}.jpg\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Verificar el cambio de estado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('El estado persistió como sold', () => pm.expect(pm.response.json().status).to.eql('sold'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pet/{{petId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pet",
+                "{{petId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eliminar la mascota",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const apiResponseSchema = JSON.parse(pm.collectionVariables.get('apiResponseSchema'));",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Schema ApiResponse válido', () => pm.response.to.have.jsonSchema(apiResponseSchema));",
+                  "pm.test('Devuelve el id eliminado', () => {",
+                  "  pm.expect(pm.response.json().message).to.eql(String(pm.collectionVariables.get('petId')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pet/{{petId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pet",
+                "{{petId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verificar que ya no existe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const apiResponseSchema = JSON.parse(pm.collectionVariables.get('apiResponseSchema'));",
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Schema ApiResponse válido', () => pm.response.to.have.jsonSchema(apiResponseSchema));",
+                  "pm.test('Mensaje Pet not found', () => pm.expect(pm.response.json().message).to.eql('Pet not found'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pet/{{petId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pet",
+                "{{petId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Casos negativos",
+      "item": [
+        {
+          "name": "Consultar un id inexistente",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('nonExistentId', Date.now() + Math.floor(Math.random() * 9000) + 1000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const apiResponseSchema = JSON.parse(pm.collectionVariables.get('apiResponseSchema'));",
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Schema ApiResponse válido', () => pm.response.to.have.jsonSchema(apiResponseSchema));",
+                  "pm.test('Mensaje Pet not found', () => pm.expect(pm.response.json().message).to.eql('Pet not found'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pet/{{nonExistentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pet",
+                "{{nonExistentId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eliminar un id inexistente",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('nonExistentId', Date.now() + Math.floor(Math.random() * 9000) + 1000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pet/{{nonExistentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pet",
+                "{{nonExistentId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Consultar un id con formato inválido (hallazgo #2)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('invalidId', 'abc' + Math.random().toString(36).slice(2, 9));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Hallazgo #2: la documentación indica 400, la API responde 404. Falla a propósito, ver README.",
+                  "pm.test('Status 400 (Invalid ID supplied)', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pet/{{invalidId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pet",
+                "{{invalidId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear una mascota con un id de tipo inválido (hallazgo #1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Hallazgo #1: la documentación indica 405, la API responde 500. Falla a propósito, ver README.",
+                  "pm.test('Status 405 (Invalid input)', () => pm.response.to.have.status(405));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pet",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pet"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"no-soy-un-numero\",\n  \"name\": \"Invalida\",\n  \"status\": \"available\",\n  \"photoUrls\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Actualizar con un status fuera del enum (hallazgo #3)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Crea su propia mascota para no depender de otros requests",
+                  "const id = Date.now() + Math.floor(Math.random() * 1000);",
+                  "pm.collectionVariables.set('enumPetId', id);",
+                  "pm.sendRequest({",
+                  "  url: pm.environment.get('baseUrl') + '/pet',",
+                  "  method: 'POST',",
+                  "  header: { 'Content-Type': 'application/json' },",
+                  "  body: { mode: 'raw', raw: JSON.stringify({ id, name: 'Enum', status: 'available', photoUrls: [] }) },",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Hallazgo #3: la documentación solo admite available/pending/sold, la API acepta 'adopted'. Falla a propósito, ver README.",
+                  "pm.test('Status 405 (Validation exception)', () => pm.response.to.have.status(405));",
+                  "",
+                  "// Limpieza: se borra la mascota aunque el test falle",
+                  "pm.sendRequest({",
+                  "  url: pm.environment.get('baseUrl') + '/pet/' + pm.collectionVariables.get('enumPetId'),",
+                  "  method: 'DELETE',",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pet",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pet"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{enumPetId}},\n  \"name\": \"Enum\",\n  \"status\": \"adopted\",\n  \"photoUrls\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "petSchema",
+      "value": "{\"type\": \"object\", \"required\": [\"id\", \"name\", \"photoUrls\"], \"properties\": {\"id\": {\"type\": \"integer\"}, \"category\": {\"type\": \"object\", \"properties\": {\"id\": {\"type\": \"integer\"}, \"name\": {\"type\": \"string\"}}}, \"name\": {\"type\": \"string\"}, \"photoUrls\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"tags\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"properties\": {\"id\": {\"type\": \"integer\"}, \"name\": {\"type\": \"string\"}}}}, \"status\": {\"type\": \"string\", \"enum\": [\"available\", \"pending\", \"sold\"]}}}"
+    },
+    {
+      "key": "apiResponseSchema",
+      "value": "{\"type\": \"object\", \"required\": [\"code\", \"type\", \"message\"], \"properties\": {\"code\": {\"type\": \"integer\"}, \"type\": {\"type\": \"string\"}, \"message\": {\"type\": \"string\"}}}"
+    },
+    {
+      "key": "petId",
+      "value": ""
+    },
+    {
+      "key": "petName",
+      "value": ""
+    },
+    {
+      "key": "nonExistentId",
+      "value": ""
+    },
+    {
+      "key": "invalidId",
+      "value": ""
+    },
+    {
+      "key": "enumPetId",
+      "value": ""
+    }
+  ]
+}

@@ -19,14 +19,15 @@ cd ohGiftCardChallenge
 npm install
 ```
 
-| Comando                                   | Qué hace                         |
-| ----------------------------------------- | -------------------------------- |
-| `npm test`                                | Corre las dos suites             |
-| `npm run test:api`                        | Corre solo la suite de API       |
-| `npm run test:ui`                         | Corre solo la suite de UI        |
-| `npx cypress open`                        | Abre Cypress en modo interactivo |
-| `npm run lint` / `npm run lint:fix`       | ESLint                           |
-| `npm run format` / `npm run format:check` | Prettier                         |
+| Comando | Qué hace |
+|---|---|
+| `npm test` | Corre las dos suites |
+| `npm run test:api` | Corre solo la suite de API |
+| `npm run test:ui` | Corre solo la suite de UI |
+| `npx cypress open` | Abre Cypress en modo interactivo |
+| `npm run lint` / `npm run lint:fix` | ESLint |
+| `npm run format` / `npm run format:check` | Prettier |
+| `npm run test:postman` | Corre la colección de Postman con Newman |
 
 Después de cada corrida, el reporte queda en `cypress/reports/index.html`.
 
@@ -47,28 +48,41 @@ cypress/
     commands.ts            registerUserByApi, loginByApi
     validateSchema.ts      helper de validación de schema
   types/                   tipos de librerías que no los traen
+postman/                   colección de Postman y entorno (baseUrl)
 cypress.config.ts          URLs y configuración del reporter
 .github/workflows/e2e.yml  pipeline
 ```
 
+## Colección de Postman (opcional)
+
+`postman/` tiene una colección equivalente a la suite de API, ejecutable con Newman: el mismo ciclo de vida, los mismos casos negativos y los tres hallazgos, que también esperan lo documentado y fallan a propósito. La URL está en el archivo de entorno, fuera de la colección.
+
+Para mantener las mismas reglas que en Cypress:
+
+- Los ids se generan en los pre-request scripts con `Date.now()` más un número aleatorio.
+- Las respuestas se validan con JSON Schema (`pm.response.to.have.jsonSchema`), con los mismos dos modelos: `Pet` y `ApiResponse`.
+- El caso del `status` fuera del enum crea su propia mascota en el pre-request y la borra en el test, aunque la assertion falle.
+
+Una diferencia con Cypress: Newman corre los requests del ciclo de vida en secuencia y comparten la mascota, así que ahí los pasos dependen entre sí. Es la forma natural de una colección de Postman; la independencia entre tests la cubre la suite de Cypress.
+
 ## Casos automatizados
 
-| ID     | Suite | Caso                                   | Qué valida                                                               |
-| ------ | ----- | -------------------------------------- | ------------------------------------------------------------------------ |
-| API-01 | API   | Crear una mascota y consultarla        | Status, schema y que los datos coincidan con los enviados                |
-| API-02 | API   | Actualizar el estado a `sold`          | Status, schema y que el cambio persista en un `GET` posterior            |
-| API-03 | API   | Eliminar una mascota                   | Status, schema, id eliminado y `404` en la consulta posterior            |
-| API-04 | API   | Consultar un id inexistente            | `404` y mensaje `Pet not found`                                          |
-| API-05 | API   | Eliminar un id inexistente             | `404`                                                                    |
-| API-06 | API   | Consultar un id con formato inválido   | `400` según la documentación (hallazgo #2)                               |
-| API-07 | API   | Crear con un id de tipo incorrecto     | `405` según la documentación (hallazgo #1)                               |
-| API-08 | API   | Actualizar con `status` fuera del enum | `405` según la documentación (hallazgo #3)                               |
-| UI-01  | UI    | Registro                               | Mensaje "Registration is successful"                                     |
-| UI-02  | UI    | Login exitoso                          | Saludo con el nombre del usuario y link de Logout                        |
-| UI-03  | UI    | Login con credenciales inválidas       | Mensaje "Invalid username/password"                                      |
-| UI-04  | UI    | Login con campos vacíos                | Validación nativa del input y que no se envíe el request                 |
-| UI-05  | UI    | Votar con comentario                   | Voto registrado, comentario guardado en el backend y visible en la tabla |
-| UI-06  | UI    | Logout                                 | Desaparece el saludo y vuelve el formulario de login                     |
+| ID | Suite | Caso | Qué valida |
+|---|---|---|---|
+| API-01 | API | Crear una mascota y consultarla | Status, schema y que los datos coincidan con los enviados |
+| API-02 | API | Actualizar el estado a `sold` | Status, schema y que el cambio persista en un `GET` posterior |
+| API-03 | API | Eliminar una mascota | Status, schema, id eliminado y `404` en la consulta posterior |
+| API-04 | API | Consultar un id inexistente | `404` y mensaje `Pet not found` |
+| API-05 | API | Eliminar un id inexistente | `404` |
+| API-06 | API | Consultar un id con formato inválido | `400` según la documentación (hallazgo #2) |
+| API-07 | API | Crear con un id de tipo incorrecto | `405` según la documentación (hallazgo #1) |
+| API-08 | API | Actualizar con `status` fuera del enum | `405` según la documentación (hallazgo #3) |
+| UI-01 | UI | Registro | Mensaje "Registration is successful" |
+| UI-02 | UI | Login exitoso | Saludo con el nombre del usuario y link de Logout |
+| UI-03 | UI | Login con credenciales inválidas | Mensaje "Invalid username/password" |
+| UI-04 | UI | Login con campos vacíos | Validación nativa del input y que no se envíe el request |
+| UI-05 | UI | Votar con comentario | Voto registrado, comentario guardado en el backend y visible en la tabla |
+| UI-06 | UI | Logout | Desaparece el saludo y vuelve el formulario de login |
 
 ## Decisiones técnicas
 
@@ -164,13 +178,13 @@ El workflow (`.github/workflows/e2e.yml`) corre en cada push:
 
 ## Hallazgos (API Petstore)
 
-| #   | Caso                                                     | Documentación                                    | Comportamiento real                                                           | Test                      |
-| --- | -------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------- | ------------------------- |
-| 1   | `POST /pet` con `id` de tipo inválido (string)           | `405 Invalid input`                              | `500`                                                                         | Falla (hallazgo conocido) |
-| 2   | `GET /pet/{petId}` con id alfanumérico                   | `400 Invalid ID supplied`                        | `404`                                                                         | Falla (hallazgo conocido) |
-| 3   | `PUT /pet` con `status` fuera del enum (`adopted`)       | Solo admite `available`, `pending` y `sold`      | Lo acepta y lo guarda                                                         | Falla (hallazgo conocido) |
-| 4   | `POST /pet`, `PUT /pet` y `DELETE /pet/{petId}` exitosos | No documentan la respuesta exitosa, solo errores | Responden `200`                                                               | Observación               |
-| 5   | `DELETE /pet/{petId}` con id inexistente                 | `404 Pet not found`                              | `404` sin body, mientras que el `404` de `GET` devuelve un JSON con `message` | Observación               |
+| # | Caso | Documentación | Comportamiento real | Test |
+|---|---|---|---|---|
+| 1 | `POST /pet` con `id` de tipo inválido (string) | `405 Invalid input` | `500` | Falla (hallazgo conocido) |
+| 2 | `GET /pet/{petId}` con id alfanumérico | `400 Invalid ID supplied` | `404` | Falla (hallazgo conocido) |
+| 3 | `PUT /pet` con `status` fuera del enum (`adopted`) | Solo admite `available`, `pending` y `sold` | Lo acepta y lo guarda | Falla (hallazgo conocido) |
+| 4 | `POST /pet`, `PUT /pet` y `DELETE /pet/{petId}` exitosos | No documentan la respuesta exitosa, solo errores | Responden `200` | Observación |
+| 5 | `DELETE /pet/{petId}` con id inexistente | `404 Pet not found` | `404` sin body, mientras que el `404` de `GET` devuelve un JSON con `message` | Observación |
 
 ## Hallazgos (Buggy Cars)
 
@@ -191,7 +205,6 @@ Qué más probaría en Buggy Cars, en qué nivel, y qué dejaría fuera de la au
 
 ## Qué agregaría con más tiempo
 
-- Colección de Postman equivalente, ejecutable con Newman.
 - Correr la suite de UI en más de un navegador (Chrome y Firefox) dentro de la matriz.
 - Generar los schemas de Zod a partir del OpenAPI de Petstore en vez de escribirlos a mano.
 - Casos negativos de registro (contraseñas que no coinciden, usuario existente, política de contraseña).
