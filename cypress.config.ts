@@ -5,6 +5,7 @@ export default defineConfig({
     baseUrl: 'https://buggy.justtestit.org',
     expose: {
       apiUrl: 'https://petstore.swagger.io/v2',
+      buggyApiUrl: 'https://k51qryqov3.execute-api.ap-southeast-2.amazonaws.com/prod',
     },
   },
 });
