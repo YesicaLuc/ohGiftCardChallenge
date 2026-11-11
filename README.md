@@ -174,8 +174,14 @@ El workflow (`.github/workflows/e2e.yml`) corre en cada push:
 
 ## Hallazgos (Buggy Cars)
 
+Los bugs encontrados en la exploración manual, con pasos para reproducir y severidad, están en [BUGS.md](BUGS.md). Estos dos se relacionan con la suite automatizada:
+
 - **El comentario se pierde de forma intermitente.** A veces el voto se registra (el usuario ve "Thank you for your vote!" y el contador sube), pero el comentario nunca se guarda. Lo confirmé consultando la API del modelo minutos después: el comentario no estaba. El test de votación falla cuando pasa, con el mensaje "el backend guardó el comentario". No es inestabilidad del test, así que no le agregué reintentos.
 - **El autor de los comentarios está vacío.** No es solo de la pantalla: la API devuelve `"user": ""` en todos los comentarios, así que el backend los guarda sin usuario.
+
+## Estrategia de pruebas
+
+Qué más probaría en Buggy Cars, en qué nivel, y qué dejaría fuera de la automatización: [ESTRATEGIA.md](ESTRATEGIA.md).
 
 ## Trade-offs
 
