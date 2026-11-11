@@ -49,12 +49,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/pet",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "pet"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["pet"]
             },
             "body": {
               "mode": "raw",
@@ -92,13 +88,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/pet/{{petId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "pet",
-                "{{petId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["pet", "{{petId}}"]
             }
           }
         },
@@ -128,12 +119,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/pet",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "pet"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["pet"]
             },
             "body": {
               "mode": "raw",
@@ -165,13 +152,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/pet/{{petId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "pet",
-                "{{petId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["pet", "{{petId}}"]
             }
           }
         },
@@ -198,13 +180,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/pet/{{petId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "pet",
-                "{{petId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["pet", "{{petId}}"]
             }
           }
         },
@@ -229,13 +206,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/pet/{{petId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "pet",
-                "{{petId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["pet", "{{petId}}"]
             }
           }
         }
@@ -274,13 +246,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/pet/{{nonExistentId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "pet",
-                "{{nonExistentId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["pet", "{{nonExistentId}}"]
             }
           }
         },
@@ -300,9 +267,7 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
-                ]
+                "exec": ["pm.test('Status 404', () => pm.response.to.have.status(404));"]
               }
             }
           ],
@@ -311,13 +276,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/pet/{{nonExistentId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "pet",
-                "{{nonExistentId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["pet", "{{nonExistentId}}"]
             }
           }
         },
@@ -349,13 +309,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/pet/{{invalidId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "pet",
-                "{{invalidId}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["pet", "{{invalidId}}"]
             }
           }
         },
@@ -383,12 +338,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/pet",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "pet"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["pet"]
             },
             "body": {
               "mode": "raw",
@@ -448,12 +399,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/pet",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "pet"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["pet"]
             },
             "body": {
               "mode": "raw",
